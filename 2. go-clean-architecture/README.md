@@ -1,5 +1,6 @@
 Sample Go Project per Clean Architecture
 
+```
 ├── api - your api specs (swagger, protobuf etc.)
 │   ├── v1 - version and particular specs inside
 │   │   └── swagger.yaml
@@ -42,5 +43,6 @@ Sample Go Project per Clean Architecture
 │       ├── amqp - amqp protocol handlers
 │       └── ...
 └── pkg - your public pkgs
+```
 
 ![Clean Architecture](clean-arch-diagram.png)
