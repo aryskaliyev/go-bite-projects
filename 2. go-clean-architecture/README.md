@@ -1,5 +1,7 @@
 Sample Go Project per Clean Architecture
 
+![Clean Architecture](clean-arch-diagram.png)
+
 ```
 ├── api - your api specs (swagger, protobuf etc.)
 │   ├── v1 - version and particular specs inside
@@ -44,5 +46,3 @@ Sample Go Project per Clean Architecture
 │       └── ...
 └── pkg - your public pkgs
 ```
-
-![Clean Architecture](clean-arch-diagram.png)
