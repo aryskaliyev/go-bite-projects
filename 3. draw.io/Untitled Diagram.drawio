@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2023-12-21T13:28:54.233Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:104.0) Gecko/20100101 Firefox/104.0" etag="zRg-X5DrY336PnhVf7UK" version="22.1.11" type="github">
+<mxfile host="app.diagrams.net" modified="2023-12-21T13:29:27.562Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:104.0) Gecko/20100101 Firefox/104.0" etag="k7kwKu2NAGHKYWcTMSLP" version="22.1.11" type="github">
   <diagram name="Page-1" id="u5YkhigBfSJe9aOL3ie4">
-    <mxGraphModel dx="2612" dy="1155" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="2882" dy="1155" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -19,8 +19,11 @@
         <mxCell id="C1-hKXSroPPRrKIY44wA-5" value="GuestMarketingHomepage&lt;br&gt;&lt;div&gt;UseCase&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="170" y="330" width="150" height="150" as="geometry" />
         </mxCell>
-        <mxCell id="C1-hKXSroPPRrKIY44wA-6" value="" style="whiteSpace=wrap;html=1;aspect=fixed;fillColor=#e3c800;fontColor=#000000;strokeColor=#B09500;" vertex="1" parent="1">
+        <mxCell id="C1-hKXSroPPRrKIY44wA-6" value="" style="whiteSpace=wrap;html=1;aspect=fixed;fillColor=#e3c800;fontColor=#000000;strokeColor=#B09500;dashed=1;" vertex="1" parent="1">
           <mxGeometry x="370" y="910" width="390" height="390" as="geometry" />
+        </mxCell>
+        <mxCell id="C1-hKXSroPPRrKIY44wA-7" value="UserEntity" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="420" y="1020" width="120" height="60" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
