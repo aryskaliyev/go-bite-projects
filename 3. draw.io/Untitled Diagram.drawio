@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2023-12-23T00:09:49.477Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:104.0) Gecko/20100101 Firefox/104.0" etag="cPOPB0qmWo79hIcOr8S1" version="22.1.11" type="github">
+<mxfile host="app.diagrams.net" modified="2023-12-23T00:10:36.747Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:104.0) Gecko/20100101 Firefox/104.0" etag="_uw73S2nt-atsqDd8e4K" version="22.1.11" type="github">
   <diagram name="Page-1" id="u5YkhigBfSJe9aOL3ie4">
     <mxGraphModel dx="1017" dy="823" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -136,10 +136,10 @@
         <mxCell id="GRUsJOnXogXTp4z3JZw1-38" value="&lt;div&gt;GetStudentsList&lt;/div&gt;&lt;div&gt;UseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="1220" y="510" width="150" height="150" as="geometry" />
         </mxCell>
-        <mxCell id="GRUsJOnXogXTp4z3JZw1-39" value="&lt;div&gt;FilterStudentsListByGroup&lt;/div&gt;&lt;div&gt;UseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="GRUsJOnXogXTp4z3JZw1-39" value="&lt;div&gt;FilterStudentsList&lt;/div&gt;&lt;div&gt;ByGroupUseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="1370" y="510" width="150" height="150" as="geometry" />
         </mxCell>
-        <mxCell id="GRUsJOnXogXTp4z3JZw1-40" value="&lt;div&gt;FilterStudentsListByCity&lt;/div&gt;&lt;div&gt;UseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="GRUsJOnXogXTp4z3JZw1-40" value="&lt;div&gt;FilterStudentsList&lt;/div&gt;&lt;div&gt;ByCityUseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="1520" y="510" width="150" height="150" as="geometry" />
         </mxCell>
         <mxCell id="GRUsJOnXogXTp4z3JZw1-41" value="&lt;div&gt;FilterStudentsListByLatest&lt;/div&gt;&lt;div&gt;EventUseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
