@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2023-12-23T00:16:18.131Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:104.0) Gecko/20100101 Firefox/104.0" etag="FIBomPLWB7fEo1s69sw_" version="22.1.11" type="github">
+<mxfile host="app.diagrams.net" modified="2023-12-23T00:17:10.764Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:104.0) Gecko/20100101 Firefox/104.0" etag="mF3KB3LegInmBasNPRqA" version="22.1.11" type="github">
   <diagram name="Page-1" id="u5YkhigBfSJe9aOL3ie4">
     <mxGraphModel dx="1017" dy="1923" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -165,6 +165,12 @@
         </mxCell>
         <mxCell id="GRUsJOnXogXTp4z3JZw1-48" value="&lt;div&gt;VoteRoundProblem&lt;/div&gt;&lt;div&gt;UseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="1240" y="350" width="150" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="GRUsJOnXogXTp4z3JZw1-49" value="&lt;div&gt;GetUserProfile&lt;/div&gt;&lt;div&gt;UseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1390" y="350" width="150" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="GRUsJOnXogXTp4z3JZw1-50" value="&lt;div&gt;GetBookmarksList&lt;/div&gt;&lt;div&gt;UseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1540" y="350" width="150" height="150" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
