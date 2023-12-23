@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2023-12-23T00:09:07.042Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:104.0) Gecko/20100101 Firefox/104.0" etag="NS5O0aABf3oCQH6NyWMd" version="22.1.11" type="github">
+<mxfile host="app.diagrams.net" modified="2023-12-23T00:09:26.330Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:104.0) Gecko/20100101 Firefox/104.0" etag="W3dygl0x_otbSpsgIE41" version="22.1.11" type="github">
   <diagram name="Page-1" id="u5YkhigBfSJe9aOL3ie4">
     <mxGraphModel dx="1017" dy="823" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -112,10 +112,10 @@
         <mxCell id="GRUsJOnXogXTp4z3JZw1-29" value="&lt;div&gt;GetRegisteredEvent&lt;/div&gt;&lt;div&gt;DetailsUseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="1520" y="210" width="150" height="150" as="geometry" />
         </mxCell>
-        <mxCell id="GRUsJOnXogXTp4z3JZw1-30" value="&lt;div&gt;GetCompletedEvent&lt;/div&gt;&lt;div&gt;UseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="GRUsJOnXogXTp4z3JZw1-30" value="&lt;div&gt;GetCompletedEvent&lt;/div&gt;&lt;div&gt;DetailsUseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="920" y="360" width="150" height="150" as="geometry" />
         </mxCell>
-        <mxCell id="GRUsJOnXogXTp4z3JZw1-31" value="&lt;div&gt;GetUpcomingEvent&lt;/div&gt;&lt;div&gt;UseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="GRUsJOnXogXTp4z3JZw1-31" value="&lt;div&gt;GetUpcomingEvent&lt;/div&gt;&lt;div&gt;DetailsUseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="1070" y="360" width="150" height="150" as="geometry" />
         </mxCell>
         <mxCell id="GRUsJOnXogXTp4z3JZw1-32" value="&lt;div&gt;RegisterToUpcomingEvent&lt;/div&gt;&lt;div&gt;UseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
