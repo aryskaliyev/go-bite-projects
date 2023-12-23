@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2023-12-23T00:03:44.016Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:104.0) Gecko/20100101 Firefox/104.0" etag="qGdASaM6jgvlEEkU15x5" version="22.1.11" type="github">
+<mxfile host="app.diagrams.net" modified="2023-12-23T00:05:58.583Z" agent="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:104.0) Gecko/20100101 Firefox/104.0" etag="EeXzEABr5AdkNv4S8CwJ" version="22.1.11" type="github">
   <diagram name="Page-1" id="u5YkhigBfSJe9aOL3ie4">
     <mxGraphModel dx="1017" dy="823" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
@@ -89,10 +89,10 @@
           <mxGeometry x="720" y="1370" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="GRUsJOnXogXTp4z3JZw1-22" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;dashed=1;" vertex="1" parent="1">
-          <mxGeometry x="920" y="210" width="750" height="550" as="geometry" />
+          <mxGeometry x="920" y="210" width="750" height="780" as="geometry" />
         </mxCell>
         <mxCell id="GRUsJOnXogXTp4z3JZw1-23" value="Student" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
-          <mxGeometry x="970" y="710" width="60" height="30" as="geometry" />
+          <mxGeometry x="930" y="950" width="60" height="30" as="geometry" />
         </mxCell>
         <mxCell id="GRUsJOnXogXTp4z3JZw1-24" value="Guest" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
           <mxGeometry x="710" y="690" width="60" height="30" as="geometry" />
@@ -132,6 +132,18 @@
         </mxCell>
         <mxCell id="GRUsJOnXogXTp4z3JZw1-37" value="&lt;div&gt;ShareEventResults&lt;/div&gt;&lt;div&gt;UseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
           <mxGeometry x="1070" y="510" width="150" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="GRUsJOnXogXTp4z3JZw1-38" value="&lt;div&gt;GetStudentsList&lt;/div&gt;&lt;div&gt;UseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1220" y="510" width="150" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="GRUsJOnXogXTp4z3JZw1-39" value="&lt;div&gt;FilterStudentsListByGroup&lt;/div&gt;&lt;div&gt;UseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1370" y="510" width="150" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="GRUsJOnXogXTp4z3JZw1-40" value="&lt;div&gt;FilterStudentsListByCity&lt;/div&gt;&lt;div&gt;UseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1520" y="510" width="150" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="GRUsJOnXogXTp4z3JZw1-41" value="&lt;div&gt;FilterStudentsListByLatest&lt;/div&gt;&lt;div&gt;EventUseCase&lt;br&gt;&lt;/div&gt;" style="ellipse;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="920" y="660" width="150" height="150" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
