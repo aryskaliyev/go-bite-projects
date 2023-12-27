@@ -46,10 +46,64 @@ wg.Wait()
 
 #### *Coffman Conditions* must be present for deadlocks to arise:
 - Mutual Exclusion
-	- A concurrenct process holds exclusive rights to a resource at any one time.
+	- A concurrent process holds exclusive rights to a resource at any one time.
 - Wait For Condition
 	- A concurrent process must simultaneously hold a resource and be waiting for an additional resouce.
 - No Preemption
 	- A resource held by a concurrent process can only be released by that process.
 - Circular Wait
 	- A concurrent process must be waiting on a chain of other concurrent processes, which are in turn waiting on it.
+
+- Livelocks are programs that are actively performing concurrent operations, but these operations do nothing to move the state of the program forward.
+
+#### Example:
+```go
+cadence := sync.NewCond(&sync.Mutex{})
+go func() {
+	for range time.Tick(1 * time.Millisecond) {
+		cadence.Broadcast()
+	}
+}()
+
+takeStep := func() {
+	cadence.L.Lock()
+	cadence.Wait()
+	cadence.L.Unlock()
+}
+
+tryDir := func(dirName string, dir *int32, out *bytes.Buffer) bool {
+	fmt.Fprintf(out, " %v", dirName)
+	atomic.AddInt32(dir, 1)
+	takeStep()
+	if atomic.LoadInt32(dir) == 1 {
+		fmt.Fprintf(out, ". Success!")
+		return true
+	}
+	takeStep()
+	atomic.AddInt32(dir, -1)
+	return false
+}
+
+var left, right int32
+tryLeft := func(out *bytes.Buffer) bool { return tryDir("left", &left, out)}
+tryRight := func(out *bytes.Buffer) bool { return tryDir("right", &right, out)}
+
+walk := func(walking *sync.WaitGroup, name string) {
+	var out bytes.Buffer
+	defer func() { fmt.Println(out.String()) }()
+	defer walking.Done()
+	fmt.Fprintf(&out, "%v is trying to scoot:", name)
+	for i := 0; i < 5; i++ {
+		if tryLeft(&out) || tryRight(&out) {
+			return
+		}
+	}
+	fmt.Fprintf(&out, "\n%v tosses her hands up in exasperation!", name)
+}
+
+var peopleInHallway sync.WaitGroup
+peopleInHallway.Add(2)
+go walk(&peopleInHallway, "Alice")
+go walk(&peopleInHallway, "Barbara")
+peopleInHallway.Wait()
+```
