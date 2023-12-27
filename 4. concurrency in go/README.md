@@ -158,3 +158,35 @@ var wg sync.WaitGroup
 
 	wg.Wait()
 ```
+
+### Goroutines
+- A goroutine is a function that is running concurrently (not necessarily in parallel!) alongside other code.
+
+- Concurrency is a property of the code; parallelism is a property of the running program. We do not write parallel code, only concurrent code that we *hope* will be run in parallel.
+
+- Goroutines - are unique to Go - they're a higher level of abstrction known as *coroutines*. Coroutines are simply concurrent subroutines (functions, closures, or methods in Go) that are *nonpreemptive* - that is, they cannot be interrupted. Instead, coroutines have multiple points throughout which allow for suspension or reentry.
+
+#### Examples:
+
+```go
+func main() {
+	go sayHello()
+}
+
+func sayHello() {
+	fmt.Println("hello")
+}
+```
+
+```go
+go func() {
+	fmt.Println("hello")
+}()
+```
+
+```go
+sayHello := func() {
+	fmt.Println("hello")
+}
+go sayHello()
+```
