@@ -166,27 +166,68 @@ var wg sync.WaitGroup
 
 - Goroutines - are unique to Go - they're a higher level of abstrction known as *coroutines*. Coroutines are simply concurrent subroutines (functions, closures, or methods in Go) that are *nonpreemptive* - that is, they cannot be interrupted. Instead, coroutines have multiple points throughout which allow for suspension or reentry.
 
-#### Examples:
+#### Example:
 
 ```go
-func main() {
+	var wg sync.WaitGroup
+	sayHello := func() {
+		defer wg.Done()
+		fmt.Println("hello")
+	}
+	wg.Add(1)
 	go sayHello()
-}
-
-func sayHello() {
-	fmt.Println("hello")
-}
+	wg.Wait()
 ```
 
-```go
-go func() {
-	fmt.Println("hello")
-}()
-```
+#### Example: Goroutines are not garbage collected
 
 ```go
-sayHello := func() {
-	fmt.Println("hello")
-}
-go sayHello()
+	memConsumed := func() uint64 {
+                runtime.GC()
+                var s runtime.MemStats
+                runtime.ReadMemStats(&s)
+                return s.Sys
+        }
+
+        var c <-chan interface{}
+        var wg sync.WaitGroup
+        noop := func() { wg.Done(); <-c }
+
+        const numGoroutines = 1e4
+        wg.Add(numGoroutines)
+        before := memConsumed()
+        for i := numGoroutines; i > 0; i-- {
+                go noop()
+        }
+        wg.Wait()
+        after := memConsumed()
+        fmt.Printf("%.3fkb\n", float64(after-before)/numGoroutines/1000)
+```
+
+### The *sync* package
+- The *sync* package contains the concurrency primitives that are most useful for low-level memory access synchronization.
+
+#### WaitGroup
+- *WaitGroup* is a great way to wait for a set of concurrent operations to complete when you either don't care about the result of the concurrent operation, or you have other means of collecting their results.
+
+#### Example:
+```go
+        var wg sync.WaitGroup
+
+        wg.Add(1)
+        go func() {
+                defer wg.Done()
+                fmt.Println("1st goroutine sleeping...")
+                time.Sleep(1)
+        }()
+
+        wg.Add(1)
+        go func() {
+                defer wg.Done()
+                fmt.Println("2nd goroutine sleeping...")
+                time.Sleep(2)
+        }()
+
+        wg.Wait()
+        fmt.Println("All goroutines complete.")
 ```
