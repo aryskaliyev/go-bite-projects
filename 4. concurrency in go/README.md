@@ -43,3 +43,13 @@ go printSum(&a, &b)
 go printSum(&b, &a)
 wg.Wait()
 ```
+
+#### *Coffman Conditions* must be present for deadlocks to arise:
+- Mutual Exclusion
+	- A concurrenct process holds exclusive rights to a resource at any one time.
+- Wait For Condition
+	- A concurrent process must simultaneously hold a resource and be waiting for an additional resouce.
+- No Preemption
+	- A resource held by a concurrent process can only be released by that process.
+- Circular Wait
+	- A concurrent process must be waiting on a chain of other concurrent processes, which are in turn waiting on it.
