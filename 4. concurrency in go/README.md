@@ -454,3 +454,44 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
         myPool.Put(instance)
         myPool.Get()
 ```
+
+- Why use pool and not just instantiate objects as you go? Go has a garbage collector, so the instantiated objects will be automatically cleaned up.
+#### Example:
+```go
+	var numCalcsCreated int
+	calcPool := &sync.Pool {
+		New: func() interface{} {
+			numCalcsCreated += 1
+			mem := make([]byte, 1024)
+			return &mem
+		},
+	}
+
+	calcPool.Put(calcPool.New())
+	calcPool.Put(calcPool.New())
+	calcPool.Put(calcPool.New())
+	calcPool.Put(calcPool.New())
+
+	const numWorkers = 1024 * 1024
+	var wg sync.WaitGroup
+	wg.Add(numWorkers)
+	for i := numWorkers; i > 0; i-- {
+		go func() {
+			defer wg.Done()
+
+			mem := calcPool.Get().(*[]byte)
+			defer calcPool.Put(mem)
+		}()
+	}
+
+	wg.Wait()
+	fmt.Printf("%d calculators were created.\n", numCalcsCreated)
+```
+
+- Another common situation where a *Pool* is useful is for warming a cache of pre-allocated objects for operations that must run as quickly as possible. In this case, instead of trying to guard the host machine's memory by constraining the number of objects created, we're trying to guard consumers' time by front-loading the time it takes to get a reference to another object. This is very common when writing high-throughput network servers that attempt to respond to requests as quickly as possible.
+
+- When working with a *Pool*, just remember the following points:
+	- When instantiating *sync.Pool*, give it a *New* member variable that is thread-safe when called.
+	- When you receive an instance from *Get*, make no assumptions regarding the state of the object you receive back.
+	- Make sure to call *Put* when you're finished with the object you pulled out of the pool. Otherwise, the *Pool* is useless. Usually this is done with *defer*.
+	- Objects in the pool must be roughly uniform in makeup.
