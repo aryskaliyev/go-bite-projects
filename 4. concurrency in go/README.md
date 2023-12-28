@@ -420,3 +420,18 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 	increments.Wait()
 	fmt.Printf("Count is %d\n", count)
 ```
+
+- *sync.Once* only counts the number of times *Do* is called, not how many times unique functions passed into *Do* are called.
+
+#### Example:
+```go
+	var count int
+	increment := func() { count++ }
+	decrement := func() { count-- }
+
+	var once sync.Once
+	once.Do(increment)
+	once.Do(decrement)
+
+	fmt.Printf("Count: %d\n", count)
+```
