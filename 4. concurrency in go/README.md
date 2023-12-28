@@ -231,3 +231,97 @@ var wg sync.WaitGroup
         wg.Wait()
         fmt.Println("All goroutines complete.")
 ```
+
+#### Mutex and RWMutex
+- *Mutex* stands for "mutual exclusion" and is a way to guard critical sections of your program. A critical section is an area of your program that requires exclusive access to a shared resource. A *Mutex* provides a concurrent-safe way to express exclusive access to these shared resources.
+
+- Critical sections are so named because they reflect a bottleneck in your program. It is somewhat expensive to enter and exit a critical section, and so generally people attempt to minimize the time spent in critical sections.
+
+#### Example:
+```go
+        var count int
+        var lock sync.Mutex
+
+        increment := func() {
+                lock.Lock()
+                defer lock.Unlock()
+                count++
+                fmt.Printf("Incrementing: %d\n", count)
+        }
+
+        decrement := func() {
+                lock.Lock()
+                defer lock.Unlock()
+                count--
+                fmt.Printf("Decrementing: %d\n", count)
+        }
+
+        var arithmetic sync.WaitGroup
+        for i := 0; i <= 5; i++ {
+                arithmetic.Add(1)
+                go func() {
+                        defer arithmetic.Done()
+                        increment()
+                }()
+        }
+
+        for i := 0; i <= 5; i++ {
+                arithmetic.Add(1)
+                go func() {
+                        defer arithmetic.Done()
+                        decrement()
+                }()
+        }
+
+        arithmetic.Wait()
+        fmt.Println("Arithmetic complete.")
+```
+
+- The *sync.RWMutex* is conceptually the same thing as *Mutex*: it guards access to memory; however, *RWMutex* gives you a little bit more control over the memory. You can request a lock for reading, in which case you will be granted access unless the lock is being held for writing. This means that an arbitrary number of readers can hold a reader lock so long as nothing else is holding a writer lock.
+
+#### Example:
+```go
+producer := func(wg *sync.WaitGroup, l sync.Locker) {
+                defer wg.Done()
+                for i := 5; i > 0; i-- {
+                        l.Lock()
+                        l.Unlock()
+                        time.Sleep(1)
+                }
+        }
+
+        observer := func(wg *sync.WaitGroup, l sync.Locker) {
+                defer wg.Done()
+                l.Lock()
+                defer l.Unlock()
+        }
+
+        test := func(count int, mutex, rwMutex sync.Locker) time.Duration {
+                var wg sync.WaitGroup
+                wg.Add(count+1)
+                beginTestTime := time.Now()
+                go producer(&wg, mutex)
+                for i := count; i > 0; i-- {
+                        go observer(&wg, rwMutex)
+                }
+
+                wg.Wait()
+                return time.Since(beginTestTime)
+        }
+
+        tw := tabwriter.NewWriter(os.Stdout, 0, 1, 2, ' ', 0)
+        defer tw.Flush()
+
+        var m sync.RWMutex
+        fmt.Fprintf(tw, "Readers\tRWMutex\tMutex\n")
+        for i := 0; i < 20; i++ {
+                count := int(math.Pow(2, float64(i)))
+                fmt.Fprintf(
+                        tw,
+                        "%d\t%v\t%v\n",
+                        count,
+                        test(count, &m, m.RLocker()),
+                        test(count, &m, &m),
+                )
+        }
+```
