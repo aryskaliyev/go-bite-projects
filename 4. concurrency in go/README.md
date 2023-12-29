@@ -495,3 +495,39 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 	- When you receive an instance from *Get*, make no assumptions regarding the state of the object you receive back.
 	- Make sure to call *Put* when you're finished with the object you pulled out of the pool. Otherwise, the *Pool* is useless. Usually this is done with *defer*.
 	- Objects in the pool must be roughly uniform in makeup.
+
+### Channels
+- Channels are one of the synchronization primitives in Go derived from Hoare's CSP (Communicating Sequential Processes). While they are used to synchronize access of the memory, they are best used to communicate information between goroutines.
+
+- Like a river, a channel serves as a conduit for a stream of information; values may be passed along the channel, and then read out downstream.
+
+#### Example: Declaring a channel of empty interface
+```go
+	var dataStream chan interface{} // Declaring a channel of empty interface
+	dataStream = make(chan interface{}) // Instantiating the channel using built-in *make* function
+```
+
+- Channels can also be declared to only support a unidirectional flow of data - that is, you can define a channel that only supports sending or receiving information.
+
+#### Example: To both declare and instantiate a channel that can only read, place *<-* operator on the lefthand side
+```go
+	var dataStream <-chan interface{}
+	dataStream := make(<-chan interface{})
+```
+
+#### Example: To declare and create a channel that can only send, place *<-* operator on the righthand side.
+```go
+	var dataStream chan<- interface{}
+	dataStream := make(chan<- interface{})
+```
+
+- Go implicitly converts bidirectional channels to unidirectional channels when needed.
+#### Example:
+```go
+	var receiveChan <-chan interface{}
+	var sendChan chan<- interface{}
+	dataStream := make(chan interface{})
+
+	receiveChan = dataStream
+	sendChan = dataStream
+```
