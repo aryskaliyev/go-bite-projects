@@ -531,3 +531,5 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 	receiveChan = dataStream
 	sendChan = dataStream
 ```
+
+- Channels in Go are said to be *blocking*. This means that any goroutine that attempts to write to a channel that is full will wait until the channel has been emptied, and any goroutine that attempts to read from a channel that is empty will wait until at least one item is placed on it.
