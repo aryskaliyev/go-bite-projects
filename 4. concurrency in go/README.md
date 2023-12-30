@@ -556,3 +556,41 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
                 fmt.Fprintf(&stdoutBuff, "\tReceived %v.\n", integer)
         }
 ```
+
+- Channel *ownership*. Channel owners have a write-access view into the channel (*chan* or *chan<-*), and channel utilizers only have a read-only view into the channel (*<-chan*).
+- The goroutine that owns a channel should:
+	- Instantiate a channel.
+	- Perform writes, or pass ownership to another goroutine.
+	- Close the channel.
+	- Encapsulate the previous three things in this list and expose them via a reader channel.
+
+- By assigning these responsibilities to channel owners, a few things happen:
+	- Because we're the one initializing the channel, we remove the risk of deadlocking by writing to a *nil* channel.
+	- Because we're the one initializing the channel, we remove the risk of *panic*ing by closing a *nil* channel.
+	- Because we're the one who decides when the channel gets closed, we remove the risk of *panic*ing by writing to a closed channel.
+	- Because we're the one who decides when the channel gets closed, we remove the risk of *panic*ing by closing a channel more than once.
+	- We wield the type checker at compile time to prevent improper writes to our channel.
+
+- As a consumer of a channel, ensure two things:
+	- Knowing when a channel is closed.
+	- Responsibly handling blocking for any reason.
+
+#### Example:
+```go
+        chanOwner := func() <-chan int {
+                resultStream := make(chan int, 5)
+                go func() {
+                        defer close(resultStream)
+                        for i := 0; i <= 5; i++ {
+                                resultStream <- i
+                        }
+                }()
+                return resultStream
+        }
+
+        resultStream := chanOwner()
+        for result := range resultStream {
+                fmt.Printf("Received: %d\n", result)
+        }
+        fmt.Println("Done receiving!")
+```
