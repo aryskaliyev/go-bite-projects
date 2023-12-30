@@ -533,3 +533,24 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 ```
 
 - Channels in Go are said to be *blocking*. This means that any goroutine that attempts to write to a channel that is full will wait until the channel has been emptied, and any goroutine that attempts to read from a channel that is empty will wait until at least one item is placed on it.
+
+#### Example: *Buffered Channel*
+```go
+        var stdoutBuff bytes.Buffer
+        defer stdoutBuff.WriteTo(os.Stdout)
+
+        intStream := make(chan int, 2)
+        go func() {
+                defer close(intStream)
+                defer fmt.Fprintln(&stdoutBuff, "Producer Done.")
+                for i := 0; i < 5; i++ {
+                        fmt.Fprintf(&stdoutBuff, "Sending: %d\n", i)
+                        intStream <- i
+                }
+
+
+        }()
+        for integer := range intStream {
+                fmt.Fprintf(&stdoutBuff, "\tReceived %v.\n", integer)
+        }
+```
