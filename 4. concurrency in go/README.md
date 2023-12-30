@@ -501,6 +501,8 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 
 - Like a river, a channel serves as a conduit for a stream of information; values may be passed along the channel, and then read out downstream.
 
+- Channels are the glue that binds goroutines together.
+
 #### Example: Declaring a channel of empty interface
 ```go
 	var dataStream chan interface{} // Declaring a channel of empty interface
@@ -594,3 +596,115 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
         }
         fmt.Println("Done receiving!")
 ```
+
+### The *select* statement
+- The *select* statement is the glue that binds channels together; it's how we're able to compose channels together in a program to form larger abstractions.
+
+- *select* statements can help safely bring channels together with concepts like cancellations, timouts, waiting, and default values.
+
+#### Example: How to use *select* statements
+```go
+	var c1, c2 <-chan interface{}
+	var c3 chan<- interface{}
+	select {
+	case <- c1:
+		// Do something
+	case <- c2:
+		// Do something
+	case c3<- struct{}{}:
+		// Do something
+	}
+```
+
+- Unlike *switch* blocks, *case* statements in *select* block aren't tested sequentially, and execution won't automatically fall through if none of the criteria are met. Instead, all channel reads and writes are considered simultaneously to see if any of them are ready: populated or closed channels in the case of reads, and channels that are not at capacity in the case of writes. If none of the channels are ready, the entrie *select* statement blocks. Then when one of the channels is ready, that operation will proceed, and its corresponding statements will execute.
+
+#### Example:
+```go
+        start := time.Now()
+        c := make(chan interface{})
+        go func() {
+                time.Sleep(5 * time.Second)
+                close(c)
+        }()
+
+        fmt.Println("Blocking on read...")
+        select {
+        case <-c:
+                fmt.Printf("Unblocked %v later.\n", time.Since(start))
+        }
+```
+
+- What happens when multiple channels have something to read? The Go runtime will perform pseudo-random uniform selection over the set of case statements. This just means that of your set of case statements, each has an equal chance of being selected as all the others. By weighting the chance of each channel being utilized equally, all Go programs that utilize the *select* statement will perform well in the average case.
+
+#### Example:
+```go
+        c1 := make(chan interface{}); close(c1)
+        c2 := make(chan interface{}); close(c2)
+
+        var c1Count, c2Count int
+        for i := 1000; i >= 0; i-- {
+                select {
+                case <-c1:
+                        c1Count++
+                case <-c2:
+                        c2Count++
+                }
+        }
+
+        fmt.Printf("c1Count: %d\nc2Count: %d\n", c1Count, c2Count)
+```
+
+- What happens if there are never any channels that become ready? If there's nothing useful you can do when all the channels are blocked, but also you can't block forever, you may want to time out.
+
+#### Example:
+```go
+	var c <-chan int
+	select {
+	case <-c:
+	case <-time.After(1 * time.Second):
+		fmt.Println("Timed out.")
+	}
+```
+
+- What happens when no channel is ready, and we need to do something in the meantime? Like *case* statements, the *select* statement also allows for a *default* clause in case you'd like to do something if all the channels you're selecting against are blocking.
+
+#### Example:
+```go
+        start := time.Now()
+        var c1, c2 <-chan int
+        select {
+        case <-c1:
+        case <-c2:
+        default:
+                fmt.Printf("In default after %v\n", time.Since(start))
+        }
+```
+
+- Usually you'll see a *default* clause used in conjunction with a for-select loop. This allows a goroutine to make progress on work while waiting for another goroutine to report a result.
+
+#### Example: 
+```go
+        done := make(chan interface{})
+        go func() {
+                time.Sleep(5 * time.Second)
+                close(done)
+        }()
+
+        workCounter := 0
+        loop: // labelling a for loop
+        for {
+                select {
+                case <-done:
+                        break loop
+                default:
+                }
+
+                // Simulate work
+                workCounter++
+                time.Sleep(1 * time.Second)
+        }
+
+        fmt.Printf("Achieved %v cycles of work before signalled to stop.\n", workCounter)
+```
+
+- There is a special case for empty *select* statements: *select* statements with no *case* clauses: `select {}` -- they will block forever.
