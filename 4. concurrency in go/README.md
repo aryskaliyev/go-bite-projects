@@ -864,3 +864,75 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 ```
 
 - To successfully mitigate the goroutine leak, we need to establish a signal between the parent goroutine and its children that allows the parent to signal cancellation to its children. By convention, this signal is usually a read-only channel named *done*. The parent goroutine passes this channel to the child goroutine and then closes the channel when it wants to cancel the child goroutine.
+
+#### Example: Goroutines receiving on a channel
+```go
+	doWork := func(
+		done <-chan interface{},
+		strings <-chan string,
+	) <-chan interface{} {
+		terminated := make(chan interface{})
+		go func() {
+			defer fmt.Println("doWork exited.")
+			defer close(terminated)
+			for {
+				select {
+				case s := <-strings:
+					// Do something interesting
+					fmt.Println(s)
+				case <-done:
+					return
+				}
+			}
+		}()
+		return terminated
+	}
+
+	done := make(chan interface{})
+	terminated := doWork(done, nil)
+
+	go func() {
+		// Cancel the operation after 1 second.
+		time.Sleep(1 * time.Second)
+		fmt.Println("Canceling doWork goroutine...")
+		close(done)
+	}()
+
+	<-terminated
+	fmt.Println("Done.")
+
+```
+
+#### Example: Goroutine blocked on attempting to write a value to a channel
+```go
+	newRandStream := func(done <-chan interface{}) <-chan int {
+		randStream := make(chan int)
+		go func() {
+			defer fmt.Println("newRandStream closure exited.")
+			defer close(randStream)
+			for {
+				select {
+				case randStream <- rand.Int():
+				case <-done:
+					return
+				}
+			}
+		}()
+
+		return randStream
+	}
+
+	done := make(chan interface{})
+	randStream := newRandStream(done)
+	fmt.Println("3 random ints:")
+	for i := 1; i <= 3; i++ {
+		fmt.Printf("%d: %d\n", i, <-randStream)
+	}
+	close(done)
+
+	// Simulate ongoing work
+	time.Sleep(1 * time.Second)
+```
+
+- *If a goroutine is responsible for creating a goroutine, it is also responsible for ensuring it can stop the goroutine.*
+- How we ensure goroutines are able to be stopped can differ depending on the type and purpose of goroutine, but they all build on the foundation of passing in a *done* channel.
