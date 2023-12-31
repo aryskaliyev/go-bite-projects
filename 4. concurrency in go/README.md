@@ -788,3 +788,79 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 
 	wg.Wait()
 ```
+
+### The *for-select* Loop
+
+#### Example:
+```go
+	for { // Either loop infinitely or range over something
+		select {
+		// Do some work with channels
+		}
+	}
+```
+
+#### Example: Sending iteration variables on a channel
+```go
+	for _, s := range []string{"a", "b", "c"} {
+		select {
+		case <-done:
+			return
+		case stringStream <- s:
+		}
+	}
+```
+
+#### Example: Looping infinitely waiting to be stopped
+```go
+	for {
+		select {
+		case <-done:
+			return
+		default:
+		}
+		
+		// Do non-preemtable work
+	}
+
+	for {
+		select {
+		case <-done:
+			return
+		default:
+			// Do non-preemptable work
+		}
+	}
+```
+
+### Preventing Goroutine Leaks
+- Goroutines are cheap and easy to create, the runtime handles multiplexing the goroutines onto any number of operating system threads so that we don't often have to worry about that level of abstraction. But they *do* cost resources, and goroutines are not garbage collected by the runtime.
+
+- Goroutines represent units of work that may or may not run in parallel with each other. The goroutine has a few paths to termination:
+	- When it has completed its work.
+	- When it cannot continue its work due to an unrecoverable error.
+	- When it's told to stop working.
+
+- The main goroutine passes a *nil* channel into *doWork*. Therefore, the *strings* channel will never actually gets any strings written onto int, and the goroutine containing *doWork* will remain in memory for the lifetime of this process (we would even deadlock if we joined the goroutine within *doWork* and the main goroutine). See the example below.
+
+#### Example: Goroutine Leak
+```go
+	doWork := func(strings <-chan string) <-chan interface{} {
+		completed := make(chan interface{})
+		go func() {
+			defer fmt.Println("doWork exited.")
+			defer close(completed)
+			for s := range strings {
+				// Do something interesting
+				fmt.Println(s)
+			}
+		}()
+		return completed
+	}
+
+	doWork(nil)
+	// Perhaps more work is done here
+	fmt.Println("Done.")
+```
+
+- To successfully mitigate the goroutine leak, we need to establish a signal between the parent goroutine and its children that allows the parent to signal cancellation to its children. By convention, this signal is usually a read-only channel named *done*. The parent goroutine passes this channel to the child goroutine and then closes the channel when it wants to cancel the child goroutine.
