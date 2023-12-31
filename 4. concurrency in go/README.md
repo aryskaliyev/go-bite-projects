@@ -708,3 +708,38 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 ```
 
 - There is a special case for empty *select* statements: *select* statements with no *case* clauses: `select {}` -- they will block forever.
+
+## Concurrency Patterns in Go
+
+### Confinement
+
+- Safe operation options:
+	- Synchronization primitives for sharing memory (e.g., *sync.Mutex*)
+	- Synchronization via communicating (e.g., channels)
+
+- Implicitly safe options within multiple concurrent processes:
+	- Immutable data
+		- Immutable data is ideal because it is implicitly concurrent-safe. Each concurrent process may operate on the same data, but it may not modify it. If it wants to create new data, it must create a new copy of the data with the desired modifications.
+	- Data protected by confinement
+		- Confinement is the simple yet powerful idea of ensuring information is only ever available from *one* concurrent process. When this is achieved, a concurrent program is implicitly safe and no synchronization is needed. There are two kinds of confinement possible: ad hoc and lexical.
+
+#### Example: Ad Hoc Confinement
+```go
+        data := make([]int, 4)
+
+        loopData := func(handleData chan<- int) {
+                defer close(handleData)
+                for i := range data {
+                        handleData <- data[i]
+                }
+        }
+
+        handleData := make(chan<- int)
+        go loopData(handleData)
+
+        for num := range handleData {
+                fmt.Println(num)
+        }
+```
+
+- Lexical confinement involves using lexical scope to expose only the correct data and concurrency primitives for multiple concurrent processes to use. It makes it impossible to do the wrong thing.
