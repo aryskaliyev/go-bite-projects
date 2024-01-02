@@ -1149,3 +1149,182 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 		fmt.Println(v)
 	}
 ```
+
+- Using channels allows us two things:
+	- At the end of our pipeline, we use a range statement to extract the values, and at each stage we can safely execute concurrently because our inputs and outputs are safe in concurrent contexts.
+	- Each stage of the pipeline is executing concurrently. This means that any stage only needs wait for its inputs, to be able to send its outputs.
+
+- At the beginning of the pipeline, we've established that we must convert discrete values into a channel. There are two points in this process that *must* be preemptable:
+	- Creation of the discrete value that is not nearly instantaneous.
+	- Sending of the discrete value on its channel.
+
+### Some Handy Generators
+- A generator for a pipeline is any function that converts a set of discrete values into a stream of values on a channel.
+
+#### Example:
+```go
+	repeat := func(
+		done <-chan interface{},
+		values ...interface{},
+	) <-chan interface{} {
+		valueStream := make(chan interface{})
+		go func() {
+			defer close(valueStream)
+			for {
+				for _, v := range values {
+					select {
+						case <-done:
+							return
+						case valueStream <- v:
+					}
+				}
+			}
+		}()
+		return valueStream
+	}
+
+	take := func(
+		done <-chan interface{},
+		valueStream <-chan interface{},
+		num int,
+	) <-chan interface{} {
+		takeStream := make(chan interface{})
+		go func() {
+			defer close(takeStream)
+			for i := 0; i < num; i++ {
+				select {
+					case <-done:
+						return
+					case takeStream <- <- valueStream:
+				}
+			}
+		}()
+		return takeStream
+	}
+
+	done := make(chan interface{})
+	defer close(done)
+
+	for num := range take(done, repeat(done, 1), 10) {
+		fmt.Printf("%v ", num)
+	}
+```
+
+#### Example:
+```go
+	take := func(
+                done <-chan interface{},
+                valueStream <-chan interface{},
+                num int,
+        ) <-chan interface{} {
+                takeStream := make(chan interface{})
+                go func() {
+                        defer close(takeStream)
+                        for i := 0; i < num; i++ {
+                                select {
+                                        case <-done:
+                                                return
+                                        case takeStream <- <- valueStream:
+                                }
+                        }
+                }()
+                return takeStream
+        }
+
+	repeatFn := func(
+		done <-chan interface{},
+		fn func() interface{},
+	) <-chan interface{} {
+		valueStream := make(chan interface{})
+		go func() {
+			defer close(valueStream)
+			for {
+				select {
+					case <-done:
+						return
+					case valueStream <- fn():
+				}
+			}
+		}()
+		return valueStream
+	}
+
+	done := make(chan interface{})
+	defer close(done)
+
+	rand := func() interface{} { return rand.Int() }
+
+	for num := range take(done, repeatFn(done, rand), 10) {
+		fmt.Println(num)
+	}
+```
+
+#### Example:
+```go
+	repeat := func(
+		done <-chan interface{},
+		values ...interface{},
+	) <-chan interface{} {
+		valueStream := make(chan interface{})
+		go func() {
+			defer close(valueStream)
+			for {
+				for _, v := range values {
+					select {
+						case <-done:
+							return
+						case valueStream <- v:
+					}
+				}
+			}
+		}()
+		return valueStream
+	}
+
+	take := func(
+                done <-chan interface{},
+                valueStream <-chan interface{},
+                num int,
+        ) <-chan interface{} {
+                takeStream := make(chan interface{})
+                go func() {
+                        defer close(takeStream)
+                        for i := 0; i < num; i++ {
+                                select {
+                                        case <-done:
+                                                return
+                                        case takeStream <- <- valueStream:
+                                }
+                        }
+                }()
+                return takeStream
+        }
+
+	toString := func(
+		done <-chan interface{},
+		valueStream <-chan interface{},
+	) <-chan string {
+		stringStream := make(chan string)
+		go func() {
+			defer close(stringStream)
+			for v := range valueStream {
+				select {
+					case <-done:
+						return
+					case stringStream <- v.(string):
+				}
+			}
+		}()
+		return stringStream
+	}
+
+	done := make(chan interface{})
+	defer close(done)
+
+	var message string
+	for token := range toString(done, take(done, repeat(done, "I", "am."), 5)) {
+		message += token
+	}
+
+	fmt.Printf("message: %s...", message)
+```
