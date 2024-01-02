@@ -998,6 +998,8 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 - "Who should be responsible for handling the error?"
 - Separation of concerns: in general, concurrent processes should send their errors to another part of the program that has complete information about the state of the program, and can make a more informed decision about what to do.
 
+- The key thing is that we've coupled the potential result with the potential error. The main takeeway is that errors should be considered first-class citizens when constructing values to return from goroutines. If your goroutine can produce errors, those errors should be tightly coupled with your result type, and passed along through the same lines of communication -- just like regular synchronous function.
+
 #### Example:
 ```go
 	type Result struct {
@@ -1027,12 +1029,18 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 	}
 
 	done := make(chan interface{})
-	//defer close(done)
+	defer close(done)
 
-	urls := []string{"https://www.google.com", "https://badhost", "https://www.youtube.com"}
+	errCount := 0
+	urls := []string{"a", "https://www.google.com", "https://badhost", "https://www.youtube.com", "b", "c", "d"}
 	for result := range checkStatus(done, urls...) {
 		if result.Error != nil {
 			fmt.Printf("error: %v\n", result.Error)
+			errCount++
+			if errCount >= 3 {
+				fmt.Println("Too many errors, breaking!")
+				break
+			}
 			continue
 		}
 		fmt.Printf("Response: %v\n", result.Response.Status)
