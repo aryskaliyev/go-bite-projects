@@ -938,9 +938,103 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 - How we ensure goroutines are able to be stopped can differ depending on the type and purpose of goroutine, but they all build on the foundation of passing in a *done* channel.
 
 ### The *or-channel*
-- If you can't know the number of *done* channels you're working with at runtime, in this case, or if you prefer a one-liner, you can combine these channels together using the *or-channel* pattern.
+- If you can't know the number of *done* channels you're working with at runtime, or if you prefer a one-liner, you can combine these channels together using the *or-channel* pattern.
 
 #### Example: Composite *done* channel through recursion and goroutines
 ```go
+	var or func(channels ...<-chan interface{}) <-chan interface{}
+	or = func(channels ...<-chan interface{}) <-chan interface{} {
+		switch len(channels) {
+			case 0:
+				return nil
+			case 1:
+				return channels[0]
+		}
 
+		orDone := make(chan interface{})
+		go func() {
+			defer close(orDone)
+
+			switch len(channels) {
+			case 2:
+				select {
+					case <-channels[0]:
+					case <-channels[1]:
+				}
+			default:
+				select {
+					case <-channels[0]:
+					case <-channels[1]:
+					case <-channels[2]:
+					case <-or(append(channels[3:], orDone)...):
+				}
+			}
+		}()
+		return orDone
+	}
+
+	sig := func(after time.Duration) <-chan interface{} {
+		fmt.Println(after)
+		c := make(chan interface{})
+		go func() {
+			defer close(c)
+			time.Sleep(after)
+		}()
+		return c
+	}
+
+	start := time.Now()
+	<-or(
+		sig(2 * time.Hour),
+		sig(5 * time.Minute),
+		sig(1 * time.Second),
+		sig(1 * time.Hour),
+		sig(1 * time.Minute),
+	)
+	fmt.Printf("done after %v\n", time.Since(start))
+```
+
+### Error Handling
+- "Who should be responsible for handling the error?"
+- Separation of concerns: in general, concurrent processes should send their errors to another part of the program that has complete information about the state of the program, and can make a more informed decision about what to do.
+
+#### Example:
+```go
+	type Result struct {
+		Error error
+		Response *http.Response
+	}
+
+	checkStatus := func(
+		done <-chan interface{},
+		urls ...string,
+	) <-chan Result {
+		results := make(chan Result)
+		go func() {
+			defer close(results)
+			for _, url := range urls {
+				var result Result
+				resp, err := http.Get(url)
+				result = Result{Error: err, Response: resp}
+				select {
+					case <-done:
+						return
+					case results <- result:
+				}
+			}
+		}()
+		return results
+	}
+
+	done := make(chan interface{})
+	//defer close(done)
+
+	urls := []string{"https://www.google.com", "https://badhost", "https://www.youtube.com"}
+	for result := range checkStatus(done, urls...) {
+		if result.Error != nil {
+			fmt.Printf("error: %v\n", result.Error)
+			continue
+		}
+		fmt.Printf("Response: %v\n", result.Response.Status)
+	}
 ```
