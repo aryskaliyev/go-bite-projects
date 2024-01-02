@@ -998,7 +998,7 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 - "Who should be responsible for handling the error?"
 - Separation of concerns: in general, concurrent processes should send their errors to another part of the program that has complete information about the state of the program, and can make a more informed decision about what to do.
 
-- The key thing is that we've coupled the potential result with the potential error. The main takeeway is that errors should be considered first-class citizens when constructing values to return from goroutines. If your goroutine can produce errors, those errors should be tightly coupled with your result type, and passed along through the same lines of communication -- just like regular synchronous function.
+- The key thing is that we've coupled the potential result with the potential error. The main takeeway is that errors should be considered first-class citizens when constructing values to return from goroutines. If your goroutine can produce errors, those errors should be tightly coupled with your result type, and passed along through the same lines of communication -- just like regular synchronous functions.
 
 #### Example:
 ```go
