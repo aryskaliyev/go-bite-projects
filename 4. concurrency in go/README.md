@@ -1046,3 +1046,38 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 		fmt.Printf("Response: %v\n", result.Response.Status)
 	}
 ```
+
+### Pipelines
+- A *pipeline* is just another tool you can use to form an abstraction in your system.
+- A pipeline is nothing more than a series of things that take data in, perform an operation on it, and pass the data back out. Each of these operations is called a *stage* of the pipeline.
+- A stage is just something that takes data in, performs a transformation on it, and sends the data back out.
+
+
+#### Example: 
+```go
+	// A pipeline stage example
+	multiply := func(values []int, multiplier int) []int {
+		multipliedValues := make([]int, len(values))
+		for i, v := range values {
+			multipliedValues[i] = v * multiplier
+		}
+		return multipliedValues
+	}
+
+	// A pipeline stage example
+	add := func(values []int, additive int) []int {
+		addedValues := make([]int, len(values))
+		for i, v := range values {
+			addedValues[i] = v + additive
+		}
+		return addedValues
+	}
+
+	ints := []int{1, 2, 3, 4}
+	for _, v := range multiply(add(multiply(ints, 2), 1), 2) {
+		fmt.Println(v)
+	}
+```
+- Properties of pipeline stage:
+	- A stage consumes and returns the same type.
+	- A stage must be reified (define variables that have a type of a function signature) by the language so that it may be passed around.
