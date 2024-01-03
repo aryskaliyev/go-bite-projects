@@ -1338,3 +1338,247 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 	- It takes a long time to run.
 
 - The property of order-independence is important because you have no guarantee in what order concurrent copies of your stage will run, nor in what order they will return.
+
+#### Example:
+```go
+	toInt := func(
+		done <-chan interface{},
+		valueStream <-chan interface{},
+	) <-chan int {
+		intStream := make(chan int)
+		go func() {
+			defer close(intStream)
+			for v := range valueStream {
+				select {
+				case <-done:
+					return
+				case intStream <- v.(int):
+				}
+			}
+		}()
+		return intStream
+	}
+
+	repeatFn := func(
+		done <-chan interface{},
+		fn func() interface{},
+	) <-chan interface{} {
+		valueStream := make(chan interface{})
+		go func() {
+			defer close(valueStream)
+			for {
+				select {
+				case <-done:
+					return
+				case valueStream <- fn():
+				}
+			}
+		}()
+		return valueStream
+	}
+
+	take := func(
+		done <-chan interface{},
+		valueStream <-chan int,
+		num int,
+	) <-chan int {
+		takeStream := make(chan int)
+		go func() {
+			defer close(takeStream)
+			for i := 0; i < num; i++ {
+				select {
+				case <-done:
+					return
+				case takeStream <- <- valueStream:
+				}
+			}
+		}()
+		return takeStream
+	}
+
+	primeFinder := func(
+		done <-chan interface{},
+		intStream <-chan int,
+	) <-chan int {
+		primeStream := make(chan int)
+		go func() {
+			defer close(primeStream)
+			for v := range intStream {
+				isPrime := true
+				for i := v-1; i >= 2; i-- {
+					if v%i == 0 {
+						isPrime = false
+						break
+					}
+				}
+				if isPrime {
+					select {
+					case <-done:
+						return
+					case primeStream <- v:
+					}
+				}
+			}
+
+		}()
+		return primeStream
+	}
+
+	rand := func() interface{} { return rand.Intn(50000000) }
+
+	done := make(chan interface{})
+	defer close(done)
+
+	start := time.Now()
+
+	randIntStream := toInt(done, repeatFn(done, rand))
+	fmt.Println("Primes:")
+	for prime := range take(done, primeFinder(done, randIntStream), 10) {
+		fmt.Printf("\t%d\n", prime)
+	}
+
+	fmt.Printf("Search took: %v\n", time.Since(start))
+```
+
+- Fanning in means *multiplexing* or joining together multiple streams of data into a single stream.
+
+- Fanning in involves creating the multiplexed channel consumers will read from, and then spinning up one goroutine for each incoming channel, and one goroutine to close the multiplexed channel when the incoming channels have all been closed. Since we're going to be creating a goroutine that is waiting on *N* other goroutines to complete, it makes sense to create a *sync.WaitGroup* to coordinate things. The *multiplex* function also notifies the *WaitGroup* that it's done.
+
+#### Example:
+```go
+fanIn := func(
+		done <-chan interface{},
+		channels ...<-chan interface{},
+	) <-chan interface{} {
+		var wg sync.WaitGroup
+		multiplexedStream := make(chan interface{})
+
+		multiplex := func(c <-chan interface{}) {
+			defer wg.Done()
+			for i := range c {
+				select {
+				case <-done:
+					return
+				case multiplexedStream <- i:
+				}
+			}
+		}
+
+		// Select from all channels
+		wg.Add(len(channels))
+		for _, c := range channels {
+			go multiplex(c)
+		}
+
+		// Wait for all the reads to complete
+		go func() {
+			wg.Wait()
+			close(multiplexedStream)
+		}()
+
+		return multiplexedStream
+	}
+
+	repeatFn := func(
+		done <-chan interface{},
+		fn func() interface{},
+	) <-chan interface{} {
+		valueStream := make(chan interface{})
+		go func() {
+			defer close(valueStream)
+			select {
+			case <-done:
+				return
+			case valueStream <- fn():
+			}
+		}()
+		return valueStream
+	}
+
+	toInt := func(
+		done <-chan interface{},
+		valueStream <-chan interface{},
+	) <-chan interface{} {
+		intStream := make(chan interface{})
+		go func() {
+			defer close(intStream)
+			for v := range valueStream {
+				select {
+				case <-done:
+					return
+				case intStream <- v:
+				}
+			}
+		}()
+		return intStream
+	}
+
+	primeFinder := func(
+		done <-chan interface{},
+		intStream <-chan interface{},
+	) <-chan interface{} {
+		primeStream := make(chan interface{})
+		go func() {
+			defer close(primeStream)
+			for v := range intStream {
+				isPrime := true
+				for i := v.(int)-1; i >= 2; i-- {
+					if v.(int)%i == 0 {
+						isPrime = false
+						break
+					}
+				}
+				if isPrime {
+					select {
+					case <-done:
+						return
+					case primeStream <- v:
+					}
+				}
+			}
+		}()
+		return primeStream
+	}
+
+	take := func(
+		done <-chan interface{},
+		valueStream <-chan interface{},
+		num int,
+	) <-chan interface{} {
+		takeStream := make(chan interface{})
+		go func() {
+			defer close(takeStream)
+			for i := 0; i < num; i++ {
+				select {
+				case <-done:
+					return
+				case takeStream <- <-valueStream:
+				}
+			}
+		}()
+		return takeStream
+	}
+
+	done := make(chan interface{})
+	defer close(done)
+
+	start := time.Now()
+
+	rand := func() interface{} { return rand.Intn(50000000) }
+
+	randIntStream := toInt(done, repeatFn(done, rand))
+
+	numFinders := runtime.NumCPU()
+	fmt.Printf("Spinning up %d prime finders.\n", numFinders)
+	finders := make([]<-chan interface{}, numFinders)
+	fmt.Println("Primes:")
+	for i := 0; i < numFinders; i++ {
+		finders[i] = primeFinder(done, randIntStream)
+	}
+
+	for prime := range take(done, fanIn(done, finders...), 10) {
+		fmt.Printf("\t%d\n", prime)
+	}
+
+	fmt.Printf("Search took: %v\n", time.Since(start))
+```
