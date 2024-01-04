@@ -1585,3 +1585,71 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 
 	fmt.Printf("Search took: %v\n", time.Since(start))
 ```
+
+- A **naive** implementation of the fan-in, fan-out algorithm only works if the order in which results arrive is unimportant.
+
+### The *or-done*-channel
+
+- At times you will be working with channels from disparate parts of your system. Unlike with pipelines, you can't make any assertions about how a channel will behave when code you're working with is canceled via its *done* channel. That is to say, you don't know if the fact that your goroutine was canceled means the channel you're reading from will have been canceled.
+
+#### Example:
+```go
+	for val := range myChan {
+		// Do something with val
+	}
+
+	// -----------------------------
+	
+	loop:
+	for {
+		select {
+		case <-done:
+			break loop
+		case maybeVal, ok := <-myChan:
+			if ok == false {
+				return // or maybe break from for
+			}
+			// Do something with maybeVal
+		}
+	}
+```
+
+#### Example:
+```go
+        orDone := func(done, c <-chan interface{}) <-chan interface{} {
+                valStream := make(chan interface{})
+                go func() {
+                        defer close(valStream)
+                        for {
+                                select {
+                                case <-done:
+                                        return
+                                case v, ok := <-c:
+                                        if ok == false {
+                                                return
+                                        }
+                                        select {
+                                        case valStream <- v:
+                                        case <-done: 
+                                        }       
+                                }
+                        }
+                }()
+                return valStream
+        }
+
+	// -----------------------------
+
+	for val := range orDone(done, myChan) {
+		// Do something with val
+	}	
+```
+
+### The *tee*-channel
+
+- Sometimes you may want to split values coming in from a channel so that you can send them off into two separate areas of your codebase. Imagine a channel of user commands: you might want to take in a stream of user commands on a channel, send them to something that executes them, and also send them to something that logs the commands for later auditing.
+
+#### Example: Pass a channel to read from, and it will return two separate channels that will get the same value
+```go
+
+```
