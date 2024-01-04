@@ -1446,7 +1446,7 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 
 #### Example:
 ```go
-fanIn := func(
+	fanIn := func(
 		done <-chan interface{},
 		channels ...<-chan interface{},
 	) <-chan interface{} {
@@ -1464,7 +1464,7 @@ fanIn := func(
 			}
 		}
 
-		// Select from all channels
+		// Select from all the channels
 		wg.Add(len(channels))
 		for _, c := range channels {
 			go multiplex(c)
@@ -1486,10 +1486,12 @@ fanIn := func(
 		valueStream := make(chan interface{})
 		go func() {
 			defer close(valueStream)
-			select {
-			case <-done:
-				return
-			case valueStream <- fn():
+			for {
+				select {
+				case <-done:
+					return
+				case valueStream <- fn():
+				}
 			}
 		}()
 		return valueStream
@@ -1498,15 +1500,15 @@ fanIn := func(
 	toInt := func(
 		done <-chan interface{},
 		valueStream <-chan interface{},
-	) <-chan interface{} {
-		intStream := make(chan interface{})
+	) <-chan int {
+		intStream := make(chan int)
 		go func() {
 			defer close(intStream)
 			for v := range valueStream {
 				select {
 				case <-done:
 					return
-				case intStream <- v:
+				case intStream <- v.(int):
 				}
 			}
 		}()
@@ -1515,15 +1517,15 @@ fanIn := func(
 
 	primeFinder := func(
 		done <-chan interface{},
-		intStream <-chan interface{},
+		intStream <-chan int,
 	) <-chan interface{} {
 		primeStream := make(chan interface{})
 		go func() {
 			defer close(primeStream)
 			for v := range intStream {
 				isPrime := true
-				for i := v.(int)-1; i >= 2; i-- {
-					if v.(int)%i == 0 {
+				for i := v-1; i >= 2; i-- {
+					if v%i == 0 {
 						isPrime = false
 						break
 					}
@@ -1552,12 +1554,13 @@ fanIn := func(
 				select {
 				case <-done:
 					return
-				case takeStream <- <-valueStream:
+				case takeStream <- <- valueStream:
 				}
 			}
 		}()
 		return takeStream
 	}
+
 
 	done := make(chan interface{})
 	defer close(done)
