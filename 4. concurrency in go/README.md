@@ -1819,3 +1819,16 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 		fmt.Printf("%v ", v)
 	}
 ```
+
+### Queuing
+- Sometimes it's useful to begin accepting work for your pipeline even though the pipeline is not yet ready for more. This process is called *queuing*. All this means is that once your stage has completed some work, it stores it in a temporary location in memory so that other stages can retrieve it later, and your stage doesn't need to hold a reference to it. While introducing queuing into your system is very useful, it's usually one of the last techniques you want to employ when optimizing your program. Adding queuing prematurely can hide synchronization issues such as deadlocks and livelocks, and further, as your program converges toward correctness, you may find that you need more or less queuing.
+
+- Queuing will almost never speed up the total runtime of your program; it will only allow the program to behave differently.
+
+- The utility of introducing a queue isn't that the runtime of one of stages has been reduced, but rather that the time it's in a *blocking state* is reduced. This allows the stage to continue doing its job.
+
+- The true utility of queues is to *decouple stages* so that the runtime of one stage has no impact on the runtime of another. Decoupling stages in this manner then cascades to alter the runtime behavior of the system as a whole, which can be either good or bad depending on your system.
+
+- Situations in which queuing *can* increase the overall performance of your system:
+	- If batching requests in a stage saves time.
+	- If delays in a stage produce a feedback loop into system.
