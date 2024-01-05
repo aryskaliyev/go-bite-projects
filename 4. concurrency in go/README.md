@@ -1744,3 +1744,78 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 		fmt.Printf("out1: %v, out2: %v\n", val1, <-out2)
 	}
 ```
+
+### The *bridge*-channel
+- In some cases, you may find yourself wanting to consume values from a sequence of channels: `<-chan <-chan interface{}`. If we define a function that can destructure the channel of channels into a simple channel - a technique called *bridging* the channels - this will make much easier for the consumer to focus on the problem at hand.
+
+#### Example:
+```go
+	orDone := func(done, c <-chan interface{}) <-chan interface{} {
+		valStream := make(chan interface{})
+		go func() {
+			defer close(valStream)
+			for {
+				select {
+				case <-done:
+					return
+				case v, ok := <-c:
+					if ok == false {
+						return
+					}
+					select {
+					case valStream <- v:
+					case <-done:
+					}
+				}
+			}
+		}()
+		return valStream
+	}
+
+	bridge := func(
+		done <-chan interface{},
+		chanStream <-chan <-chan interface{},
+	) <-chan interface{} {
+		valStream := make(chan interface{})
+		go func() {
+			defer close(valStream)
+			for {
+				var stream <-chan interface{}
+				select {
+				case maybeStream, ok := <-chanStream:
+					if ok == false {
+						return
+					}
+					stream = maybeStream
+				case <-done:
+					return
+				}
+				for val := range orDone(done, stream) {
+					select {
+					case valStream <- val:
+					case <-done:
+					}
+				}
+			}
+		}()
+		return valStream
+	}
+
+	genVals := func() <-chan <-chan interface{} {
+		chanStream := make(chan (<-chan interface{}))
+		go func() {
+			defer close(chanStream)
+			for i := 0; i < 10; i++ {
+				stream := make(chan interface{}, 1)
+				stream <- i
+				close(stream)
+				chanStream <- stream
+			}
+		}()
+		return chanStream
+	}
+
+	for v := range bridge(nil, genVals()) {
+		fmt.Printf("%v ", v)
+	}
+```
