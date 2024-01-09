@@ -1883,3 +1883,26 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 		Value(key interface{}) interface {}
 	}
 ```
+
+- A *Done* method which returns a channel that's closed when our function is to be preemted (interrupted or stopped).
+- A *Deadline* function to indicate if a goroutine will be canceled after a certain time.
+- An *Err* method that will return non-nil if the goroutine was canceled.
+
+- The *context* package serves two primary purposes:
+	- To provide an API for canceling branches of your call-graph.
+	- To provide a data-bag for transporting request-scoped data through your call-graph.
+
+- **Cancellation** in a function has three aspects:
+	- A goroutine's parent may want to cancel it.
+	- A goroutine may want to cancel its children.
+	- Any blocking operations within a goroutine need to be preemptable so that it may be canceled.
+
+- Some *context* package functions:
+```go
+func WithCancel(parent Context) (ctx Context, cancel CancelFunc)
+func WithDeadline(parent Context, deadline time.Time) (Context, CancelFunc)
+func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc)
+```
+
+- *WithCancel* returns a new *Context* that closes its *done* channel when the returned *cancel* function is called.
+- *WithDeadline* returns a new *Context* that closes its *done* channeld when the machine's clock advances past the given *deadline*.
