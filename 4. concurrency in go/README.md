@@ -1832,3 +1832,54 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 - Situations in which queuing *can* increase the overall performance of your system:
 	- If batching requests in a stage saves time.
 	- If delays in a stage produce a feedback loop into system.
+
+- Queuing should be implemented either:
+	- At the entrance to your pipeline.
+	- In stages where batching will lead to higher efficiency.
+
+### The *context* package
+- *context* package:
+```go
+	var Canceled = errors.New("context canceled")
+	var DeadlineExceeded error = deadlineExceededError{}
+
+	type CancelFunc
+	type Context
+
+	func Background() Context
+	func TODO() Context
+	func WithCancel(parent Context) (ctx Context, cancel CancelFunc)
+	func WithDeadline(parent Context, deadline time.Time) (Context, CancelFunc)
+	func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc)
+	func WithValue(parent Context, key, val interface{}) Context
+```
+
+- *Context* type is the type that will flow through your system much like a *done* channel does.
+
+- *Context* type:
+```go
+	type Context interface {
+		// Deadline returns the time when work done on behalf of this
+		// context should be canceled. Deadline returns ok==false when no
+		// deadline is set. Successive calls to Deadline return the same results.
+		Deadline() (deadline time.Time, ok bool)
+
+		// Done returns a channel that's closed when work done on behalf
+		// of this context should be canceled. Done may return nil if this
+		// context can never be canceled. Successive calls to Done return
+		// the same value.
+		Done() <-chan struct{}
+
+		// Err returns a non-nil error value after Done is closed. Err
+		// returns Canceled if the context was canceled or
+		// DeadlineExceeded if the context's deadline passed. No other
+		// values for Err are defined. After Done is closed, successive
+		// calls to Err return the same value.
+		Err() error
+
+		// Value returns the value associated with this context for key,
+		// or nil if no value is associated with key. Successive calls to
+		// Value with the same key returns the same result.
+		Value(key interface{}) interface {}
+	}
+```
