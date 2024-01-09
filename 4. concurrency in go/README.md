@@ -2185,3 +2185,5 @@ func locale(ctx context.Context) (string, error) {
 	return "EN/US", nil
 }
 ```
+
+- Although the difference in this iteration of the program is small, it allows the *locale* function to **fail fast**.
