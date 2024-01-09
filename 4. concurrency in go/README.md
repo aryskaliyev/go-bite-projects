@@ -1906,3 +1906,99 @@ func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc)
 
 - *WithCancel* returns a new *Context* that closes its *done* channel when the returned *cancel* function is called.
 - *WithDeadline* returns a new *Context* that closes its *done* channeld when the machine's clock advances past the given *deadline*.
+- *WithTimeout* returns a new *Context* that closes its *done* channel after the given *timeout* duration.
+
+- Instances of *context.Context* may look equivalent from the outside, but internally they may change at every stack-frame. For this reason, it's important to always pass instances of *Context* into your functions.
+
+- To start the chain, the *context* package provides you with two functions to create empty instances of *Context*:
+```go
+func Background() Context
+func TODO() Context
+```
+
+- *Background* simply returns an empty *Context*.
+- *TODO* is not meant for use in production, but also returns an empty *Context*; *TODO*'s intended purpose is to serve as a placeholder for when you don't know which *Context* to utilize, or if you expect your code to be provided with a *Context*, but the upstream code hasn't yet furnished one.
+
+#### Example: *done* channel pattern
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+func main() {
+	var wg sync.WaitGroup
+	done := make(chan interface{})
+	defer close(done)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := printGreeting(done); err != nil {
+			fmt.Printf("%v", err)
+			return
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := printFarewell(done); err != nil {
+			fmt.Printf("%v", err)
+			return
+		}
+	}()
+
+	wg.Wait()
+}
+
+func printGreeting(done <-chan interface{}) error {
+	greeting, err := genGreeting(done)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%s world!\n", greeting)
+	return nil
+}
+
+func printFarewell(done <-chan interface{}) error {
+	farewell, err := genFarewell(done)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%s world!\n", farewell)
+	return nil
+}
+
+func genGreeting(done <-chan interface{}) (string, error) {
+	switch locale, err := locale(done); {
+	case err != nil:
+		return "", err
+	case locale == "EN/US":
+		return "hello", nil
+	}
+	return "", fmt.Errorf("unsupported locale")
+}
+
+func genFarewell(done <-chan interface{}) (string, error) {
+	switch locale, err := locale(done); {
+	case err != nil:
+		return "", err
+	case locale == "EN/US":
+		return "goodbye", nil
+	}
+	return "", fmt.Errorf("unsupported locale")
+}
+
+func locale(done <-chan interface{}) (string, error) {
+	select {
+	case <-done:
+		return "", fmt.Errorf("canceled")
+	case <-time.After(1*time.Minute):
+	}
+	return "EN/US", nil
+}
+```
