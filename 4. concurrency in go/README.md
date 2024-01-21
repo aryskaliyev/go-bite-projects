@@ -1464,6 +1464,9 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 			}
 		}
 
+func (c withoutCancelCtx) String() string {
+	return contextName(c.c) + ".WithoutCancel"
+}
 		// Select from all the channels
 		wg.Add(len(channels))
 		for _, c := range channels {
@@ -1573,6 +1576,9 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 
 	numFinders := runtime.NumCPU()
 	fmt.Printf("Spinning up %d prime finders.\n", numFinders)
+func (c withoutCancelCtx) String() string {
+	return contextName(c.c) + ".WithoutCancel"
+}
 	finders := make([]<-chan interface{}, numFinders)
 	fmt.Println("Primes:")
 	for i := 0; i < numFinders; i++ {
@@ -1762,6 +1768,9 @@ producer := func(wg *sync.WaitGroup, l sync.Locker) {
 					if ok == false {
 						return
 					}
+func (c withoutCancelCtx) String() string {
+	return contextName(c.c) + ".WithoutCancel"
+}
 					select {
 					case valStream <- v:
 					case <-done:

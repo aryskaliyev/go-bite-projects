@@ -343,10 +343,57 @@ func (c *cancelCtx) cancel(removeFromParent bool, err, cause error) {
 	}
 }
 
+func WithoutCancel(parent Context) Context {
+	if parent == nil {
+		panic("cannot create context from nil parent")
+	}
+	return withoutCancelCtx{parent}
+}
 
+//---------------------------------------------------------------------------------
 
+type withoutCancelCtx struct {
+	c Context
+}
 
+func (c withoutCancelCtx) Deadline(deadline time.Time, ok bool) () { return }
+func (c withoutCancelCtx) Done() <-chan struct{} { return nil }
+func (c withoutCancelCtx) Err() error { return nil }
+func (c withoutCancelCtx) Value(key any) any { return value(c, key) }
+func (c withoutCancelCtx) String() string {
+	return contextName(c.c) + ".WithoutCancel"
+}
 
+//---------------------------------------------------------------------------------
+
+func WithDeadline(parent Context, d time.Time) (Context, CancelFunc) {
+	return WithDeadlineCause(parent, d, nil)
+}
+
+func WithDeadlineCause(parent Context, d time.Time, cause error) (Context, CancelFunc) {
+	if parent == nil {
+		panic("cannot create context from nil parent")
+	}
+	if cur, ok := parent.Deadline(); ok && cur.Before(d) {
+		return WithCancel(parent)
+	}
+	c := &timerCtx{
+		deadline: d,
+	}
+	c.cancelCtx.propagateCancel(parent, c)
+	dur := time.Until(d)
+	if dur <= 0 {
+		c.cancel(true, DeadlineExceeded, cause)
+		return c, func() { c.cancel(false, Canceled, nil) }
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.err == nil {
+		c.timer = time.AfterFunc(dur, func())
+	}
+}
+// https://cs.opensource.google/go/go/+/refs/tags/go1.21.6:src/context/context.go
+// line 625
 
 
 
