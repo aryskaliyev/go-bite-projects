@@ -2,10 +2,11 @@ package context
 
 import (
 	"errors"
-	"internal/reflectlite"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"internal/reflectlite"
 )
 
 type Context interface {
@@ -23,28 +24,28 @@ var DeadlineExceeded error = deadlineExceededError{}
 
 type deadlineExceededError struct{}
 
-func (deadlineExceededError) Error() string { return "context deadline exceeded" }
-func (deadlineExceededError) Timeout() bool { return true }
-func (deadlineExceededError) Temporary() bool { return true}
+func (deadlineExceededError) Error() string   { return "context deadline exceeded" }
+func (deadlineExceededError) Timeout() bool   { return true }
+func (deadlineExceededError) Temporary() bool { return true }
 
 //---------------------------------------------------------------------------------
 
-type emptyCtx struct {}
+type emptyCtx struct{}
 
 func (emptyCtx) Deadline() (deadline time.Time, ok bool) { return }
-func (emptyCtx) Done() <-chan struct{} { return nil }
-func (emptyCtx) Err() error { return nil }
-func (emptyCtx) Value(key any) any { return nil }
+func (emptyCtx) Done() <-chan struct{}                   { return nil }
+func (emptyCtx) Err() error                              { return nil }
+func (emptyCtx) Value(key any) any                       { return nil }
 
 //---------------------------------------------------------------------------------
 
-type backgroundCtx struct { emptyCtx }
+type backgroundCtx struct{ emptyCtx }
 
 func (backgroundCtx) String() string { return "context.Background" }
 
 //---------------------------------------------------------------------------------
 
-type todoCtx struct { emptyCtx }
+type todoCtx struct{ emptyCtx }
 
 func (todoCtx) String() string { return "context.TODO" }
 
@@ -127,7 +128,7 @@ type afterFuncer interface {
 type afterFuncCtx struct {
 	cancelCtx
 	once sync.Once
-	f func()
+	f    func()
 }
 
 func (a *afterFuncCtx) cancel(removeFromParent bool, err, cause error) {
@@ -206,11 +207,11 @@ func init() {
 
 type cancelCtx struct {
 	Context
-	mu sync.Mutex
-	done atomic.Value
+	mu       sync.Mutex
+	done     atomic.Value
 	children map[canceler]struct{}
-	err error
-	cause error
+	err      error
+	cause    error
 }
 
 func (c *cancelCtx) Value(key any) any {
@@ -234,6 +235,7 @@ func (c *cancelCtx) Done() <-chan struct{} {
 	}
 	return d.(chan struct{})
 }
+
 func (c *cancelCtx) Err() error {
 	c.mu.Lock()
 	err := c.err
@@ -250,16 +252,16 @@ func (c *cancelCtx) propagateCancel(parent Context, child canceler) {
 	}
 
 	select {
-		case <-done:
-			child.cancel(false, parent.Err(), Cause(parent))
-			return
-		default:
+	case <-done:
+		child.cancel(false, parent.Err(), Cause(parent))
+		return
+	default:
 	}
 
 	if p, ok := parentCancelCtx(parent); ok {
 		p.mu.Lock()
 		if p.err != nil {
-			child.cancel(flase, p.err, p.cause)
+			child.cancel(false, p.err, p.cause)
 		} else {
 			if p.children == nil {
 				p.children = make(map[canceler]struct{})
@@ -277,7 +279,7 @@ func (c *cancelCtx) propagateCancel(parent Context, child canceler) {
 		})
 		c.Context = stopCtx{
 			Context: parent,
-			stop: stop,
+			stop:    stop,
 		}
 		c.mu.Unlock()
 		return
@@ -286,9 +288,9 @@ func (c *cancelCtx) propagateCancel(parent Context, child canceler) {
 	goroutines.Add(1)
 	go func() {
 		select {
-			case <-parent.Done():
-				child.cancel(false, parent.Err(), Cause(parent))
-			case <-child.Done():
+		case <-parent.Done():
+			child.cancel(false, parent.Err(), Cause(parent))
+		case <-child.Done():
 		}
 	}()
 }
@@ -356,10 +358,10 @@ type withoutCancelCtx struct {
 	c Context
 }
 
-func (c withoutCancelCtx) Deadline(deadline time.Time, ok bool) () { return }
-func (c withoutCancelCtx) Done() <-chan struct{} { return nil }
-func (c withoutCancelCtx) Err() error { return nil }
-func (c withoutCancelCtx) Value(key any) any { return value(c, key) }
+func (c withoutCancelCtx) Deadline(deadline time.Time, ok bool) { return }
+func (c withoutCancelCtx) Done() <-chan struct{}                { return nil }
+func (c withoutCancelCtx) Err() error                           { return nil }
+func (c withoutCancelCtx) Value(key any) any                    { return value(c, key) }
 func (c withoutCancelCtx) String() string {
 	return contextName(c.c) + ".WithoutCancel"
 }
@@ -389,58 +391,120 @@ func WithDeadlineCause(parent Context, d time.Time, cause error) (Context, Cance
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.err == nil {
-		c.timer = time.AfterFunc(dur, func())
+		c.timer = time.AfterFunc(dur, func() {
+			c.cancel(true, DeadlineExceeded, cause)
+		})
+	}
+	return c, func() { c.cancel(true, Canceled, nil) }
+}
+
+//---------------------------------------------------------------------------------
+
+type timerCtx struct {
+	cancelCtx
+	timer    *time.Timer
+	deadline time.Time
+}
+
+func (c *timerCtx) Deadline() (deadline time.Time, ok bool) { return c.deadline, true }
+
+func (c *timerCtx) String() string {
+	return contextName(c.cancelCtx.Context) + ".WithDeadline(" + c.deadline.String() + " [" + time.Until(c.deadline).String() + "])"
+}
+
+func (c *timerCtx) cancel(removeFromParent bool, err, cause error) {
+	c.cancelCtx.cancel(false, err, cause)
+	if removeFromParent {
+		removeChild(c.cancelCtx.Context, c)
+	}
+	c.mu.Lock()
+	if c.timer != nil {
+		c.timer.Stop()
+		c.timer = nil
+	}
+	c.mu.Unlock()
+}
+
+//---------------------------------------------------------------------------------
+
+func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc) {
+	return WithDeadline(parent, time.Now().Add(timeout))
+}
+
+func WithTimeoutCause(parent Context, timeout time.Duration, cause error) (Context, CancelFunc) {
+	return WithDeadlineCause(parent, time.Now().Add(timeout), cause)
+}
+
+//---------------------------------------------------------------------------------
+
+func WithValue(parent Context, key, val any) Context {
+	if parent == nil {
+		panic("cannot create context from nil parent")
+	}
+	if key == nil {
+		panic("nil key")
+	}
+	if !reflectlite.TypeOf(key).Comparable() {
+		panic("key is not comparable")
+	}
+	return &valueCtx{parent, key, val}
+}
+
+//---------------------------------------------------------------------------------
+
+type valueCtx struct {
+	Context
+	key, val any
+}
+
+func stringify(v any) string {
+	switch s := v.(type) {
+	case stringer:
+		return s.String()
+	case string:
+		return s
+	}
+	return "<not String>"
+}
+
+func (c *valueCtx) String() string {
+	return contextName(c.Context) + ".WithValue(type" + reflectlite.TypeOf(c.key).String() + ", val " + stringify(c.val) + ")"
+}
+
+func (c *valueCtx) Value(key any) any {
+	if c.key == key {
+		return c.val
+	}
+	return value(c.Context, key)
+}
+
+func value(c Context, key any) any {
+	for {
+		switch ctx := c.(type) {
+		case *valueCtx:
+			if key == ctx.key {
+				return ctx.val
+			}
+			c = ctx.Context
+		case *cancelCtx:
+			if key == &cancelCtxKey {
+				return c
+			}
+			c = ctx.Context
+		case withoutCancelCtx:
+			if key == &cancelCtxKey {
+				return nil
+			}
+			c = ctx.c
+		case *timerCtx:
+			if key == &cancelCtxKey {
+				return &ctx.cancelCtx
+			}
+			c = ctx.Context
+		case backgroundCtx, todoCtx:
+			return nil
+		default:
+			return c.Value(key)
+		}
 	}
 }
-// https://cs.opensource.google/go/go/+/refs/tags/go1.21.6:src/context/context.go
-// line 625
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
