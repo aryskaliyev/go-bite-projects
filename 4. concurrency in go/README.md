@@ -2196,3 +2196,92 @@ func locale(ctx context.Context) (string, error) {
 ```
 
 - Although the difference in this iteration of the program is small, it allows the *locale* function to **fail fast**.
+
+- A data-bag for a *Context* to store and retrieve request-scoped data.
+
+#### Example: A data-bag for a *Context* to store and retrieve request-scoped data.
+```go
+func main() {
+        ProcessRequest("jane", "abc123")
+}
+
+func ProcessRequest(userID, authToken string) {
+        ctx := context.WithValue(context.Background(), "userID", userID)
+        ctx = context.WithValue(ctx, "authToken", authToken)
+        HandleResponse(ctx)
+}
+
+func HandleResponse(ctx context.Context) {
+        fmt.Printf(
+                "handling response for %v (%v)\n",
+                ctx.Value("userID"),
+                ctx.Value("authToken"),
+        )
+}
+```
+- Qualifications for a *Context* data-bag are:
+	- The key you use must satisfy Go's notion of *comparability*; that is, the equality operators *==* and *!=* need to return correct results when used.
+	- Values returned must be safe to access from multiple goroutines.
+
+- Since both the *Context*'s key and value are defined as *interface{}*, we lose Go's type-safety when attempting to retrieve values. Therefore, authors recommend to follow a few rules when storing and retrieving value from a *Context*:
+	- First, they recommend to define a custome key-type in your package. As long as other packages do the same, this prevents collisions within the *Context*.
+#### Example: Keys in a map that have different types, but the same underlying value.
+```go
+type foo int
+type bar int
+
+m := make(map[interface{}]int)
+m[foo(1)] = 1
+m[bar(1)] = 2
+
+fmt.Printf("%v\n", m)
+```
+
+#### Example: Since we don't export keys we use to store the data, we must therefore export functions that retrieve the data for us.
+```go
+func main() {
+	ProcessRequest("jane", "abc123")
+}
+
+type ctxKey int
+
+const (
+	ctxUserID ctxKey = iota
+	ctxAuthToken
+)
+
+func UserID(c context.Context) string {
+	return c.Value(ctxUserID).(string)
+}
+
+func AuthToken(c context.Context) string {
+	return c.Value(ctxAuthToken).(string)
+}
+
+func ProcessRequest(userID, authToken string) {
+	ctx := context.WithValue(context.Background(), ctxUserID, userID)
+	ctx = context.WithValue(ctx, ctxAuthToken, authToken)
+	HandleResponse(ctx)
+}
+
+func HandleResponse(ctx context.Context) {
+	fmt.Printf(
+		"handling response for %v (auth: %v)\n",
+		UserID(ctx),
+		AuthToken(ctx),
+	)
+)
+```
+
+- **Heuristics** for request-scoped data and API boundaries:
+1. The data should transit process or API boundaries.
+	- If you generate the data in your process' memory, it's probably not a good candidate to be request-scoped data unless you also pass it across an API boundary.
+2. The data should be immutable.
+	- If it's not, then by definition what you're storing did not come from the request.
+3. The data should trend toward simple types.
+	- If request-scoped data is meant to transit process and API boundaries, it's much easier for the other side to pull this data out if it doesn't also have to import a complex graph of packages.
+4. The data should be data, not types with methods.
+	- Operations are logic and belong on the things consuming this data.
+5. The data should help decorate operations, not drive them.
+	- If your algorithm behaves differently based on what is or isn't included in its *Context*, you have likely crossed over into the territory of optional parameters.
+6. *Another dimension to consider is how many layers this data might need to traverse before utilization.*
