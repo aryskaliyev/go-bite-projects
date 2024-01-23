@@ -43,13 +43,13 @@ func (emptyCtx) Value(key any) any { return nil }
 
 //-------------------------------------------------------------------------------------------
 
-type backgroundCtx struct { emptyCtx }
+type backgroundCtx struct{ emptyCtx }
 
 func (backgroundCtx) String() string { return "context.Background" }
 
 //-------------------------------------------------------------------------------------------
 
-type todoCtx struct { emptyCtx }
+type todoCtx struct{ emptyCtx }
 
 func (todoCtx) String() string { return "context.TODO" }
 
@@ -131,7 +131,7 @@ type afterFuncer interface {
 type afterFuncCtx struct {
 	cancelCtx
 	once sync.Once
-	f func()
+	f    func()
 }
 
 func (a *afterFuncCtx) cancel(removeFromParent bool, err, cause error) {
@@ -206,11 +206,11 @@ func init() {
 
 type cancelCtx struct {
 	Context
-	mu sync.Mutex
-	done atomic.Value
+	mu       sync.Mutex
+	done     atomic.Value
 	children map[canceler]struct{}
-	err error
-	cause error
+	err      error
+	cause    error
 }
 
 func (c *cancelCtx) Value(key any) any {
@@ -278,7 +278,7 @@ func (c *cancelCtx) propagateCancel(parent Context, child canceler) {
 		})
 		c.Context = stopCtx{
 			Context: parent,
-			stop: stop,
+			stop:    stop,
 		}
 		c.mu.Unlock()
 		return
@@ -342,7 +342,6 @@ func (c *cancelCtx) cancel(removeFromParent bool, err, cause error) {
 	}
 }
 
-
 //-------------------------------------------------------------------------------------------
 
 func WithoutCancel(parent Context) Context {
@@ -380,136 +379,148 @@ func (withoutCancelCtx) String() string {
 
 //-------------------------------------------------------------------------------------------
 
-// line 595 context.go
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+func WithDeadline(parent Context, d time.Time) (Context, CancelFunc) {
+	return WithDeadlineCause(parent, d, nil)
+}
+
+func WithDeadline(parent Context, d time.Time, cause error) (Context, CancelFunc) {
+	if parent == nil {
+		panic("cannot create context from nil parent")
+	}
+	if cur, ok := parent.Deadline(); ok && cur.Before(d) {
+		return WithCancel(parent)
+	}
+	c := &timerCtx{
+		deadline: d,
+	}
+	c.cancelCtx.propagateCancel(parent, c)
+	dur := time.Until(d)
+	if dur <= 0 {
+		c.cancel(true, DeadlineExceeded, cause)
+		return c, func() { c.cancel(false, Canceled, nil) }
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.err == nil {
+		c.timer = time.AfterFunc(dur, func() {
+			c.cancel(true, DeadlineExceeded, cause)
+		})
+	}
+	return c, func() { c.cancel(true, Canceled, nil) }
+}
+
+//-------------------------------------------------------------------------------------------
+
+type timerCtx struct {
+	cancelCtx
+	timer    *time.Timer
+	deadline time.Time
+}
+
+func (c *timerCtx) Deadline() (deadline time.Time, ok bool) {
+	return c.deadline, true
+}
+
+func (c *timerCtx) String() string {
+	return contextName(c.cancelCtx.Context) + ".WithDeadline(" + c.deadline.String() + " [" + time.Until(c.deadline).String() + "])"
+}
+
+func (c *timerCtx) cancel(removeFromParent bool, err, cause error) {
+	c.cancelCtx.cancel(false, err, cause)
+	if removeFromParent {
+		removeChild(c.cancelCtx.Context, c)
+	}
+	c.mu.Lock()
+	if c.timer != nil {
+		c.timer.Stop()
+		c.timer = nil
+	}
+	c.mu.Unlock()
+}
+
+//-------------------------------------------------------------------------------------------
+
+func WithTimeout(parent Context, timeout time.Duration) (Context, CancelFunc) {
+	return WithDeadline(parent, time.Now().Add(timeout))
+}
+
+func WithTimeoutCause(parent Context, timeout time.Duration, cause error) (Context, CancelFunc) {
+	return WithDeadlineCause(parent, time.Now().Add(timeout), cause)
+}
+
+//-------------------------------------------------------------------------------------------
+
+func WithValue(parent Context, key, val any) Context {
+	if parent == nil {
+		panic("cannot create context from nil parent")
+	}
+	if key == nil {
+		panic("nil key")
+	}
+	if !reflectlite.TypeOf(key).Comparable() {
+		panic("key is not comparable")
+	}
+	return &valueCtx{parent, key, val}
+}
+
+//-------------------------------------------------------------------------------------------
+
+type valueCtx struct {
+	Context
+	key, val any
+}
+
+func stringify(v any) string {
+	switch s := v.(type) {
+	case stringer:
+		return s.String()
+	case string:
+		return s
+	}
+	return "<not Stringer>"
+}
+
+func (c *valueCtx) String() string {
+	return contextName(c.Context) + ".WithValue(type " + reflectlite.TypeOf(c.key).String() + ", val " + stringify(c.val) + ")"
+}
+
+func (c *valueCtx) Value(key any) any {
+	if c.key == key {
+		return c.val
+	}
+	return value(c.Context, key)
+}
+
+func value(c Context, key any) any {
+	for {
+		switch ctx := c.(type) {
+		case *valueCtx:
+			if key == ctx.key {
+				return ctx.val
+			}
+			c = ctx.Context
+		case *cancelCtx:
+			if key == &cancelCtxKey {
+				return c
+			}
+			c = ctx.Context
+		case withoutCancelCtx:
+			if key == &cancelCtxKey {
+				return nil
+			}
+			c = ctx.c
+		case *timerCtx:
+			if key == &cancelCtxKey {
+				return &ctx.cancelCtx
+			}
+			c = ctx.Context
+		case backgroundCtx, todoCtx:
+			return nil
+		default:
+			return c.Value(key)
+		}
+	}
+}
 
 
 
