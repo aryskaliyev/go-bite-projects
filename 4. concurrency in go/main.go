@@ -6,12 +6,13 @@ import (
 )
 
 func main() {
-	doWork := func(
+	doWork :=func(
 		done <-chan interface{},
 		pulseInterval time.Duration,
 	) (<-chan interface{}, <-chan time.Time) {
 		heartbeat := make(chan interface{})
 		results := make(chan time.Time)
+
 		go func() {
 			pulse := time.Tick(pulseInterval)
 			workGen := time.Tick(2 * pulseInterval)
@@ -22,6 +23,7 @@ func main() {
 				default:
 				}
 			}
+
 			sendResult := func(r time.Time) {
 				for {
 					select {
