@@ -17,7 +17,6 @@ func main() {
 			for i := 0; i < 10; i++ {
 				select {
 				case heartbeatStream <- struct{}{}:
-				default:
 				}
 
 				select {
