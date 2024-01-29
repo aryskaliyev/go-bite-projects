@@ -1,6 +1,7 @@
 package main
 
 import (
+	"time"
 	"testing"
 )
 
@@ -9,15 +10,29 @@ func TestDoWork_GeneratesAllNumbers(t *testing.T) {
 	defer close(done)
 
 	intSlice := []int{0, 1, 2, 3, 5}
-	heartbeat, results := DoWork(done, intSlice...)
+	const timeout = 2 * time.Second
+	heartbeat, results := DoWork(done, timeout / 2, intSlice...)
 
 	<-heartbeat
 
 	i := 0
-	for r := range results {
-		if expected := intSlice[i]; r != expected {
-			t.Errorf("index %v: expected %v, but received %v,", i, expected, r)
+	for {
+		select {
+		case r, ok := <-results:
+			if ok == false {
+				return
+			} else if expected := intSlice[i]; r != expected {
+				t.Errorf(
+					"index %v: expected %v, but received %v,",
+					i,
+					expected,
+					r,
+				)
+			}
+			i++
+		case <-heartbeat:
+		case <-time.After(timeout):
+			t.Fatal("test timed out")
 		}
-		i++
 	}
 }
