@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"time"
+	"time"
 )
 
 func DoWork(
@@ -15,7 +15,7 @@ func DoWork(
 		defer close(heartbeat)
 		defer close(intStream)
 
-		//time.Sleep(2 * time.Second)
+		time.Sleep(2 * time.Second)
 
 		for _, n := range nums {
 			select {
